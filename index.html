@@ -6,8 +6,111 @@
     <title>jakpat stream</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
-        :root { --accent: #ff0000; }
-        body { background: #0f0f0f; color: white; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; }
+* { box-sizing: border-box; }
+
+/* The main container */
+.main-wrapper {
+    display: flex;
+    flex-wrap: nowrap;
+    width: 100%;
+    height: 100vh;
+    background: #0f0f0f;
+}
+/* Styling the scrollbar for Chrome, Edge, and Safari */
+.player-section::-webkit-scrollbar, 
+.main-wrapper::-webkit-scrollbar {
+    width: 8px;
+}
+
+.player-section::-webkit-scrollbar-track, 
+.main-wrapper::-webkit-scrollbar-track {
+    background: #0f0f0f;
+}
+
+.player-section::-webkit-scrollbar-thumb, 
+.main-wrapper::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 10px;
+}
+
+.player-section::-webkit-scrollbar-thumb:hover, 
+.main-wrapper::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
+}
+
+/* Styling for Firefox */
+.player-section, .main-wrapper {
+    scrollbar-width: thin;
+    scrollbar-color: #333 #0f0f0f;
+}
+/* 1. Target the player section specifically to hide its bar */
+.player-section::-webkit-scrollbar {
+    display: none;
+    width: 0;
+}
+
+.player-section {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+/* 2. Remove the margin/padding that creates the white gap at the bottom */
+iframe {
+    display: block;
+    background: transparent;
+}
+
+/* 3. Make the red border glow slightly to bridge the gap */
+.chat-section {
+    border-left: 2px solid var(--accent);
+    box-shadow: -5px 0 15px rgba(255, 0, 0, 0.05);
+}
+
+/* On Desktop (Big Screens) */
+@media (min-width: 1001px) {
+    .player-section {
+        flex: 1;
+        height: 100vh;
+        overflow-y: auto;
+        padding: 0 40px 40px 20px;
+    }
+    .chat-section {
+        width: 350px;
+        height: 100vh;
+        border-left: 2px solid var(--accent);
+        background: #050505;
+        flex-shrink: 0;
+    }
+}
+
+/* On Mobile/Small Windows */
+@media (max-width: 1000px) {
+    .main-wrapper {
+        flex-direction: column;
+        overflow-y: auto;
+        height: 100vh;
+    }
+    .chat-section {
+        width: 100%;
+        height: 500px;
+        flex-shrink: 0;
+        border-left: none;
+        border-top: 2px solid var(--accent);
+    }
+}
+
+/* Theatre Mode */
+body.theatre-mode .chat-section { display: none; }
+body.theatre-mode .player-section { width: 100vw; padding: 0; overflow: hidden; }
+
+:root { --accent: #ff0000; }
+body { 
+    background: #0f0f0f; 
+    color: white; 
+    font-family: sans-serif; 
+    margin: 0; 
+    overflow: hidden; 
+}
         
         body.theatre-mode .player-area { max-width: 100vw; width: 100vw; height: 100vh; margin-top: 0; border-radius: 0; }
         body.theatre-mode .info-section { display: none; }
@@ -66,58 +169,73 @@
 </head>
 <body class="hide-ui">
 
-    <div class="player-area" id="main-container" onmousemove="showUI()">
+  <div class="main-wrapper"> <div class="player-section"> <div class="player-area" id="main-container" onmousemove="showUI()">
         <div id="offline-overlay">
-            <div class="offline-icon">📡</div>
-            <div class="offline-text">OFFLINE</div>
-            <div class="reconnecting-text">Attempting to reconnect...</div>
+          <div class="offline-icon">📡</div>
+          <div class="offline-text">OFFLINE</div>
+          <div class="reconnecting-text">Attempting to reconnect...</div>
         </div>
-        
+
         <div id="start-overlay" onclick="startPlayer()"><div class="big-play-btn">▶</div></div>
         <div id="loading-overlay"><div class="spinner"></div></div>
 
         <video id="video" playsinline muted onclick="handleVideoClick()"></video>
 
         <div id="controls-bar">
-            <div class="ctrl-group">
-                <div class="tip-box">
-                    <button id="playBtn" onclick="togglePlay()">II</button>
-                    <span class="tip-text">Play/Pause <span class="sc-key">Space</span></span>
-                </div>
-                <div class="tip-box">
-                    <div id="live-badge" onclick="syncLive()">LIVE</div>
-                    <span class="tip-text">Sync Live <span class="sc-key">L</span></span>
-                </div>
+          <div class="ctrl-group">
+            <div class="tip-box">
+              <button id="playBtn" onclick="togglePlay()">II</button>
+              <span class="tip-text">Play/Pause <span class="sc-key">Space</span></span>
             </div>
-            
-            <div class="ctrl-group vol-pill" id="volume-area">
-                <div class="tip-box">
-                    <button id="muteBtn" onclick="toggleMute()">🔊</button>
-                    <span class="tip-text">Mute <span class="sc-key">M</span></span>
-                </div>
-                <input type="range" id="volSlider" min="0" max="1" step="0.05" oninput="updateVol(this.value)">
-                <span class="tip-text" style="bottom: 125%; left: 50%; transform: translateX(-50%);">Scroll to Adjust</span>
+            <div class="tip-box">
+              <div id="live-badge" onclick="syncLive()">LIVE</div>
+              <span class="tip-text">Sync Live <span class="sc-key">L</span></span>
             </div>
+          </div>
 
-            <div class="ctrl-group">
-                <div class="tip-box">
-                    <button onclick="document.body.classList.toggle('theatre-mode')">🍿</button>
-                    <span class="tip-text">Theatre Mode <span class="sc-key">T</span></span>
-                </div>
-                <div class="tip-box">
-                    <button onclick="togglePiP()">📺</button>
-                    <span class="tip-text">PiP Mode <span class="sc-key">P</span></span>
-                </div>
-                <div class="tip-box">
-                    <button onclick="toggleFS()">⛶</button>
-                    <span class="tip-text">Fullscreen <span class="sc-key">F</span></span>
-                </div>
+          <div class="ctrl-group vol-pill" id="volume-area">
+            <div class="tip-box">
+              <button id="muteBtn" onclick="toggleMute()">🔊</button>
+              <span class="tip-text">Mute <span class="sc-key">M</span></span>
             </div>
+            <input type="range" id="volSlider" min="0" max="1" step="0.05" oninput="updateVol(this.value)">
+            <span class="tip-text" style="bottom: 125%; left: 50%; transform: translateX(-50%);">Scroll to Adjust</span>
+          </div>
+
+          <div class="ctrl-group">
+            <div class="tip-box">
+              <button onclick="document.body.classList.toggle('theatre-mode')">🍿</button>
+              <span class="tip-text">Theatre Mode <span class="sc-key">T</span></span>
+            </div>
+            <div class="tip-box">
+              <button onclick="togglePiP()">📺</button>
+              <span class="tip-text">PiP Mode <span class="sc-key">P</span></span>
+            </div>
+            <div class="tip-box">
+              <button onclick="toggleFS()">⛶</button>
+              <span class="tip-text">Fullscreen <span class="sc-key">F</span></span>
+            </div>
+          </div>
         </div>
+      </div>
+
+      <div class="info-section">
+        <h1>jakpat stream</h1>
+        <div class="description-box">jakpat</div>
+      </div>
+    </div> <div class="chat-section"> <iframe src="https://www5.cbox.ws/box/?boxid=960550&boxtag=dK1FUi&tid=1&tkey=1529971c1259c1c4" 
+              width="100%" 
+              height="100%" 
+              allowtransparency="yes" 
+              allow="autoplay" 
+              frameborder="0" 
+              marginheight="0" 
+              marginwidth="0" 
+              scrolling="auto">
+      </iframe>
     </div>
 
-    <div class="info-section"><h1>jakpat stream</h1><div class="description-box">jakpat</div></div>
-
+  </div>
     <script>
         const video = document.getElementById('video');
         const main = document.getElementById('main-container');
