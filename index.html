@@ -2,28 +2,28 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>jakpat stream</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
 * { box-sizing: border-box; }
 :root { --accent: #ff0000; }
 
+.main-wrapper {
+    display: flex;
+    flex-wrap: nowrap;
+    width: 100%;
+    min-height: 100dvh; 
+    background: #0f0f0f;
+}
+
 body { 
     background: #0f0f0f; 
     color: white; 
     font-family: sans-serif; 
     margin: 0; 
-    overflow: hidden; 
-}
-
-/* --- LAYOUT --- */
-.main-wrapper {
-    display: flex;
-    flex-wrap: nowrap;
-    width: 100%;
-    height: 100vh;
-    background: #0f0f0f;
+    overflow-x: hidden;
+    min-height: 100dvh;
 }
 
 /* Scrollbar Styling */
@@ -71,27 +71,31 @@ body.theatre-mode .player-area {
     .main-wrapper { 
         flex-direction: column; 
         overflow-y: auto; 
-        height: 100vh;
+        height: auto;
     }
     
     .player-section { 
-        padding: 0; 
-        flex: 0 0 auto;
+        padding: 0 !important;
         width: 100%;
+        flex: none;
+        height: auto;
     }
-
+    
     .player-area {
+        width: 100%;
+        max-width: 100vw;
         margin-top: 0;
         border-radius: 0;
     }
 
     .chat-section { 
         width: 100%; 
-        height: 60vh;
+        height: 500px;
         flex-shrink: 0; 
         border-left: none; 
         border-top: 2px solid var(--accent); 
     }
+
 
     /* Special Mobile Theatre Fix */
     body.theatre-mode .player-area {
@@ -134,18 +138,76 @@ button:hover { transform: scale(1.15); }
 input[type=range] { width: 80px; accent-color: var(--accent); cursor: pointer; outline: none; }
 
 /* Tooltips */
-.tip-box { position: relative; display: flex; align-items: center; justify-content: center; }
-.tip-text { 
-    position: absolute; bottom: 125%; background: rgba(20, 20, 20, 0.95); color: white; 
-    padding: 6px 12px; border-radius: 8px; font-size: 12px; white-space: nowrap; 
-    pointer-events: none; opacity: 0; transition: 0.2s; transform: translateY(8px); 
-    border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+.tip-box { 
+    position: relative; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
 }
-.tip-box:hover .tip-text { opacity: 1; transform: translateY(0); }
-.sc-key { color: #888; margin-left: 8px; font-size: 10px; background: rgba(255,255,255,0.1); padding: 1px 4px; border-radius: 3px; }
 
-.info-section { width: 100%; max-width: 1280px; padding: 20px; }
-.description-box { background: #222; padding: 15px; border-radius: 8px; margin-top: 10px; }
+.tip-text { 
+    position: absolute; 
+    bottom: 140%; 
+    left: 50%;
+    transform: translateX(-50%) translateY(8px); 
+    background: rgba(20, 20, 20, 0.95); 
+    color: white; 
+    padding: 6px 12px; 
+    border-radius: 8px; 
+    font-size: 12px; 
+    white-space: nowrap; 
+    pointer-events: none; 
+    opacity: 0; 
+    transition: 0.2s ease-out; 
+    border: 1px solid rgba(255,255,255,0.1); 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    z-index: 1000;
+    pointer-events: none;
+}
+
+/* One single hover rule for all tooltips */
+.tip-box:hover .tip-text { 
+    opacity: 1; 
+    transform: translateX(-50%) translateY(0); 
+}
+
+/* --- MOBILE CHAT CUT-OFF FIX --- */
+@media (max-width: 1000px) {
+    .chat-section { 
+        width: 100%; 
+        height: 60dvh;
+        border-top: 2px solid var(--accent); 
+    }
+    .player-section {
+        padding: 0 10px !important;
+    }
+}
+
+/* --- INFO & DESCRIPTION SECTION --- */
+.info-section {
+    margin-top: 25px;
+    padding: 25px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.info-section h1 {
+    margin: 0 0 10px 0;
+    font-size: 26px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.5px;
+}
+
+.description-box {
+    color: #aaa;
+    line-height: 1.6;
+    font-size: 15px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 15px;
+    border-radius: 8px;
+}
 
 #playBtn { 
     min-width: 45px;
@@ -172,7 +234,7 @@ input[type=range] { width: 80px; accent-color: var(--accent); cursor: pointer; o
         <div id="controls-bar">
           <div class="ctrl-group">
             <div class="tip-box">
-              <button id="playBtn" onclick="togglePlay()">II</button>
+  <button id="playBtn" onclick="togglePlay()">II</button>
               <span class="tip-text">Play/Pause <span class="sc-key">Space</span></span>
             </div>
             <div class="tip-box">
@@ -187,7 +249,7 @@ input[type=range] { width: 80px; accent-color: var(--accent); cursor: pointer; o
               <span class="tip-text">Mute <span class="sc-key">M</span></span>
             </div>
             <input type="range" id="volSlider" min="0" max="1" step="0.05" oninput="updateVol(this.value)">
-            <span class="tip-text" style="bottom: 125%; left: 50%; transform: translateX(-50%);">Scroll to Adjust</span>
+            <span class="tip-text">Scroll to Adjust</span>
           </div>
 
           <div class="ctrl-group">
@@ -200,7 +262,7 @@ input[type=range] { width: 80px; accent-color: var(--accent); cursor: pointer; o
               <span class="tip-text">PiP Mode <span class="sc-key">P</span></span>
             </div>
             <div class="tip-box">
-              <button onclick="toggleFS()">⛶</button>
+  <button onclick="toggleFS()">⛶</button>
               <span class="tip-text">Fullscreen <span class="sc-key">F</span></span>
             </div>
           </div>
