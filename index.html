@@ -7,103 +7,8 @@
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
 * { box-sizing: border-box; }
-
-/* The main container */
-.main-wrapper {
-    display: flex;
-    flex-wrap: nowrap;
-    width: 100%;
-    height: 100vh;
-    background: #0f0f0f;
-}
-/* Styling the scrollbar for Chrome, Edge, and Safari */
-.player-section::-webkit-scrollbar, 
-.main-wrapper::-webkit-scrollbar {
-    width: 8px;
-}
-
-.player-section::-webkit-scrollbar-track, 
-.main-wrapper::-webkit-scrollbar-track {
-    background: #0f0f0f;
-}
-
-.player-section::-webkit-scrollbar-thumb, 
-.main-wrapper::-webkit-scrollbar-thumb {
-    background: #333;
-    border-radius: 10px;
-}
-
-.player-section::-webkit-scrollbar-thumb:hover, 
-.main-wrapper::-webkit-scrollbar-thumb:hover {
-    background: var(--accent);
-}
-
-/* Styling for Firefox */
-.player-section, .main-wrapper {
-    scrollbar-width: thin;
-    scrollbar-color: #333 #0f0f0f;
-}
-/* 1. Target the player section specifically to hide its bar */
-.player-section::-webkit-scrollbar {
-    display: none;
-    width: 0;
-}
-
-.player-section {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
-}
-
-/* 2. Remove the margin/padding that creates the white gap at the bottom */
-iframe {
-    display: block;
-    background: transparent;
-}
-
-/* 3. Make the red border glow slightly to bridge the gap */
-.chat-section {
-    border-left: 2px solid var(--accent);
-    box-shadow: -5px 0 15px rgba(255, 0, 0, 0.05);
-}
-
-/* On Desktop (Big Screens) */
-@media (min-width: 1001px) {
-    .player-section {
-        flex: 1;
-        height: 100vh;
-        overflow-y: auto;
-        padding: 0 40px 40px 20px;
-    }
-    .chat-section {
-        width: 350px;
-        height: 100vh;
-        border-left: 2px solid var(--accent);
-        background: #050505;
-        flex-shrink: 0;
-    }
-}
-
-/* On Mobile/Small Windows */
-@media (max-width: 1000px) {
-    .main-wrapper {
-        flex-direction: column;
-        overflow-y: auto;
-        height: 100vh;
-    }
-    .chat-section {
-        width: 100%;
-        height: 500px;
-        flex-shrink: 0;
-        border-left: none;
-        border-top: 2px solid var(--accent);
-    }
-}
-
-/* Theatre Mode */
-body.theatre-mode .chat-section { display: none; }
-body.theatre-mode .player-section { width: 100vw; padding: 0; overflow: hidden; }
-
 :root { --accent: #ff0000; }
+
 body { 
     background: #0f0f0f; 
     color: white; 
@@ -111,60 +16,143 @@ body {
     margin: 0; 
     overflow: hidden; 
 }
-        
-        body.theatre-mode .player-area { max-width: 100vw; width: 100vw; height: 100vh; margin-top: 0; border-radius: 0; }
-        body.theatre-mode .info-section { display: none; }
 
-        .player-area { position: relative; width: 100%; max-width: 1280px; aspect-ratio: 16/9; background: #000; margin-top: 20px; border-radius: 12px; overflow: hidden; }
-        video { width: 100%; height: 100%; display: block; cursor: pointer; background: #000; }
+/* --- LAYOUT --- */
+.main-wrapper {
+    display: flex;
+    flex-wrap: nowrap;
+    width: 100%;
+    height: 100vh;
+    background: #0f0f0f;
+}
 
-        /* Offline Screen */
-        #offline-overlay { position: absolute; inset: 0; z-index: 500; background: #000; display: none; flex-direction: column; justify-content: center; align-items: center; }
-        .offline-icon { font-size: 55px; margin-bottom: 10px; animation: breathe 3s ease-in-out infinite; }
-        .offline-text { color: var(--accent); font-size: 34px; font-weight: 900; letter-spacing: 4px; }
-        .reconnecting-text { color: #777; font-size: 14px; margin-top: 10px; }
+/* Scrollbar Styling */
+.player-section::-webkit-scrollbar, .main-wrapper::-webkit-scrollbar { width: 8px; }
+.player-section::-webkit-scrollbar-track, .main-wrapper::-webkit-scrollbar-track { background: #0f0f0f; }
+.player-section::-webkit-scrollbar-thumb, .main-wrapper::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+.player-section { -ms-overflow-style: none; scrollbar-width: none; flex: 1; height: 100vh; overflow-y: auto; padding: 0 40px 40px 20px; }
+.player-section::-webkit-scrollbar { display: none; }
 
-        @keyframes breathe { 0% { transform: scale(1); opacity: 0.7; } 50% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); opacity: 0.7; } }
+.chat-section {
+    width: 350px;
+    height: 100vh;
+    border-left: 2px solid var(--accent);
+    background: #050505;
+    flex-shrink: 0;
+    box-shadow: -5px 0 15px rgba(255, 0, 0, 0.05);
+}
 
-        /* Start Overlay */
-        #start-overlay { position: absolute; inset: 0; display: none; justify-content: center; align-items: center; background: rgba(0,0,0,0.4); z-index: 150; cursor: pointer; backdrop-filter: blur(4px); }
-        .big-play-btn { width: 90px; height: 90px; background: var(--accent); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 35px; box-shadow: 0 0 20px rgba(0,0,0,0.5); transition: transform 0.2s; }
-        #start-overlay:hover .big-play-btn { transform: scale(1.1); }
+iframe { display: block; background: transparent; }
 
-        /* Loading Spinner */
-        #loading-overlay { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; z-index: 130; pointer-events: none; background: rgba(0,0,0,0.6); }
-        .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top: 4px solid var(--accent); border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
+/* --- PLAYER & CURSOR --- */
+.player-area { 
+    position: relative; width: 100%; max-width: 1280px; aspect-ratio: 16/9; 
+    background: #000; margin-top: 20px; border-radius: 12px; overflow: hidden; 
+}
 
-        /* Controls */
-        #controls-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 80px; display: none; align-items: center; padding: 0 20px; background: linear-gradient(transparent, rgba(0,0,0,0.9)); z-index: 120; }
-        .hide-ui #controls-bar { display: none !important; }
-        .ui-visible { display: flex !important; }
+video { width: 100%; height: 100%; display: block; cursor: pointer; background: #000; }
 
-        /* Tooltips */
-        .tip-box { position: relative; display: flex; align-items: center; justify-content: center; }
-        .tip-text { 
-            position: absolute; bottom: 125%; background: rgba(20, 20, 20, 0.95); color: white; 
-            padding: 6px 12px; border-radius: 8px; font-size: 12px; white-space: nowrap; 
-            pointer-events: none; opacity: 0; transition: 0.2s; transform: translateY(8px); 
-            border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
-        .tip-box:hover .tip-text { opacity: 1; transform: translateY(0); }
-        .sc-key { color: #888; margin-left: 8px; font-size: 10px; background: rgba(255,255,255,0.1); padding: 1px 4px; border-radius: 3px; }
+.cursor-hidden, .cursor-hidden * { cursor: none !important; }
+#controls-bar { cursor: auto; }
 
-        .ctrl-group { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.1); padding: 8px 15px; border-radius: 30px; }
-        button { background: none; border: none; color: white; font-size: 18px; cursor: pointer; transition: transform 0.1s; display: flex; align-items: center; justify-content: center; outline: none; }
-        button:hover { transform: scale(1.15); }
-        
-        #playBtn { width: 35px; }
-        #live-badge { font-size: 11px; font-weight: bold; padding: 4px 8px; border-radius: 4px; background: #444; color: white; cursor: pointer; }
-        #live-badge.is-live { background: var(--accent); }
-        
-        .vol-pill { margin-left: auto; margin-right: 10px; position: relative; }
-        input[type=range] { width: 80px; accent-color: var(--accent); cursor: pointer; outline: none; }
+/* --- THEATRE MODE (GLOBAL) --- */
+body.theatre-mode .chat-section,
+body.theatre-mode .info-section { display: none !important; }
 
-        .info-section { width: 100%; max-width: 1280px; padding: 20px; }
-        .description-box { background: #222; padding: 15px; border-radius: 8px; margin-top: 10px; }
+body.theatre-mode .player-section { width: 100vw; padding: 0; overflow: hidden; }
+
+body.theatre-mode .player-area { 
+    max-width: 100vw; width: 100vw; height: 100vh; 
+    margin-top: 0; border-radius: 0; 
+}
+
+/* --- RESPONSIVE & MOBILE FIX --- */
+@media (max-width: 1000px) {
+    .main-wrapper { 
+        flex-direction: column; 
+        overflow-y: auto; 
+        height: 100vh;
+    }
+    
+    .player-section { 
+        padding: 0; 
+        flex: 0 0 auto;
+        width: 100%;
+    }
+
+    .player-area {
+        margin-top: 0;
+        border-radius: 0;
+    }
+
+    .chat-section { 
+        width: 100%; 
+        height: 60vh;
+        flex-shrink: 0; 
+        border-left: none; 
+        border-top: 2px solid var(--accent); 
+    }
+
+    /* Special Mobile Theatre Fix */
+    body.theatre-mode .player-area {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        z-index: 9999 !important;
+        height: 100vh !important;
+        height: -webkit-fill-available !important;
+    }
+}
+
+/* --- UI ELEMENTS --- */
+#offline-overlay, #start-overlay, #loading-overlay { position: absolute; inset: 0; display: none; justify-content: center; align-items: center; }
+#offline-overlay { z-index: 500; background: #000; flex-direction: column; }
+#start-overlay { z-index: 150; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); cursor: pointer; }
+#loading-overlay { z-index: 130; pointer-events: none; background: rgba(0,0,0,0.6); display: flex; }
+
+.offline-text { color: var(--accent); font-size: 34px; font-weight: 900; letter-spacing: 4px; }
+.big-play-btn { width: 90px; height: 90px; background: var(--accent); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 35px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+.spinner { width: 40px; height: 40px; border: 4px solid #333; border-top: 4px solid var(--accent); border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { 100% { transform: rotate(360deg); } }
+@keyframes breathe { 0% { transform: scale(1); opacity: 0.7; } 50% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); opacity: 0.7; } }
+
+#controls-bar { 
+    position: absolute; bottom: 0; left: 0; right: 0; height: 80px; 
+    display: none; align-items: center; padding: 0 20px; 
+    background: linear-gradient(transparent, rgba(0,0,0,0.9)); z-index: 120; 
+}
+.ui-visible { display: flex !important; }
+
+.ctrl-group { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.1); padding: 8px 15px; border-radius: 30px; }
+button { background: none; border: none; color: white; font-size: 18px; cursor: pointer; display: flex; align-items: center; transition: transform 0.1s; }
+button:hover { transform: scale(1.15); }
+
+#live-badge { font-size: 11px; font-weight: bold; padding: 4px 8px; border-radius: 4px; background: #444; color: white; cursor: pointer; }
+#live-badge.is-live { background: var(--accent); }
+
+.vol-pill { margin-left: auto; margin-right: 10px; position: relative; }
+input[type=range] { width: 80px; accent-color: var(--accent); cursor: pointer; outline: none; }
+
+/* Tooltips */
+.tip-box { position: relative; display: flex; align-items: center; justify-content: center; }
+.tip-text { 
+    position: absolute; bottom: 125%; background: rgba(20, 20, 20, 0.95); color: white; 
+    padding: 6px 12px; border-radius: 8px; font-size: 12px; white-space: nowrap; 
+    pointer-events: none; opacity: 0; transition: 0.2s; transform: translateY(8px); 
+    border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}
+.tip-box:hover .tip-text { opacity: 1; transform: translateY(0); }
+.sc-key { color: #888; margin-left: 8px; font-size: 10px; background: rgba(255,255,255,0.1); padding: 1px 4px; border-radius: 3px; }
+
+.info-section { width: 100%; max-width: 1280px; padding: 20px; }
+.description-box { background: #222; padding: 15px; border-radius: 8px; margin-top: 10px; }
+
+#playBtn { 
+    min-width: 45px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
     </style>
 </head>
 <body class="hide-ui">
@@ -257,11 +245,24 @@ body {
         });
 
         function showUI() {
-            if(!isStarted || document.body.classList.contains('hide-ui')) return;
-            controls.classList.add('ui-visible');
-            clearTimeout(hideTimer);
-            if (!video.paused) hideTimer = setTimeout(() => controls.classList.remove('ui-visible'), 3000);
-        }
+    if(!isStarted) return;
+    
+    // Show UI and Mouse
+    controls.classList.add('ui-visible');
+    main.classList.remove('cursor-hidden'); 
+    
+    clearTimeout(hideTimer);
+    
+    let timeoutDuration = (window.innerWidth < 1000) ? 5000 : 3000;
+    
+    if (!video.paused) {
+        hideTimer = setTimeout(() => {
+            // Hide UI and Mouse
+            controls.classList.remove('ui-visible');
+            main.classList.add('cursor-hidden'); 
+        }, timeoutDuration);
+    }
+}
 
         function setOffline(isOff) {
             offline.style.display = isOff ? 'flex' : 'none';
@@ -286,12 +287,24 @@ body {
             video.muted = false;
             syncLive();
             video.play();
+            showUI();
         }
 
         function handleVideoClick() {
-            if (!isStarted) startPlayer();
-            else togglePlay();
-        }
+    if (!isStarted) {
+        startPlayer();
+        return;
+    }
+
+    // Check if the controls are already visible
+    if (!controls.classList.contains('ui-visible')) {
+        // If hidden, just show them and don't pause
+        showUI();
+    } else {
+        // If already visible, then toggle the play/pause state
+        togglePlay();
+    }
+}
 
         function initHls() {
             if (!Hls.isSupported()) return;
