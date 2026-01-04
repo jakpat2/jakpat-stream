@@ -24,6 +24,7 @@ body {
     margin: 0; 
     overflow-x: hidden;
     min-height: 100dvh;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 /* Scrollbar Styling */
@@ -107,27 +108,56 @@ body.theatre-mode .player-area {
         height: -webkit-fill-available !important;
     }
 }
+/* Hide the volume slider on small mobile to save space */
+@media (max-width: 480px) {
+    #volSlider { display: none; }
+    .vol-pill { margin-left: 0; }
+}
 
 /* --- UI ELEMENTS --- */
 #offline-overlay, #start-overlay, #loading-overlay { position: absolute; inset: 0; display: none; justify-content: center; align-items: center; }
-#offline-overlay { z-index: 500; background: #000; flex-direction: column; }
+#offline-overlay { z-index: 500; background: #000; flex-direction: column; gap: 10px; cursor: auto !important; }
 #start-overlay { z-index: 150; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); cursor: pointer; }
 #loading-overlay { z-index: 130; pointer-events: none; background: rgba(0,0,0,0.6); display: flex; }
 
+/* Offline Specifics */
+.offline-icon { font-size: 60px; margin-bottom: 10px; animation: breathe 2.5s ease-in-out infinite; }
 .offline-text { color: var(--accent); font-size: 34px; font-weight: 900; letter-spacing: 4px; }
+.reconnecting-text { color: #666; font-size: 14px; margin-top: 5px; }
+
 .big-play-btn { width: 90px; height: 90px; background: var(--accent); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 35px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
 .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top: 4px solid var(--accent); border-radius: 50%; animation: spin 1s linear infinite; }
+
 @keyframes spin { 100% { transform: rotate(360deg); } }
-@keyframes breathe { 0% { transform: scale(1); opacity: 0.7; } 50% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); opacity: 0.7; } }
+@keyframes breathe { 0% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); opacity: 0.6; } }
 
 #controls-bar { 
-    position: absolute; bottom: 0; left: 0; right: 0; height: 80px; 
-    display: none; align-items: center; padding: 0 20px; 
-    background: linear-gradient(transparent, rgba(0,0,0,0.9)); z-index: 120; 
+    position: absolute; 
+    bottom: 0; 
+    left: 0; 
+    right: 0; 
+    height: auto;
+    min-height: 60px; 
+    display: none; 
+    align-items: center; 
+    padding: 15px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.9)); 
+    z-index: 120;
+    flex-wrap: wrap;
+    justify-content: space-between;
 }
+
 .ui-visible { display: flex !important; }
 
-.ctrl-group { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.1); padding: 8px 15px; border-radius: 30px; }
+.ctrl-group { 
+    display: flex; 
+    align-items: center; 
+    gap: 5px;
+    background: rgba(255,255,255,0.1); 
+    padding: 6px 12px; 
+    border-radius: 30px;
+    margin: 2px;
+}
 button { background: none; border: none; color: white; font-size: 18px; cursor: pointer; display: flex; align-items: center; transition: transform 0.1s; }
 button:hover { transform: scale(1.15); }
 
@@ -158,29 +188,20 @@ input[type=range] { width: 80px; accent-color: var(--accent); cursor: pointer; o
     white-space: nowrap; 
     pointer-events: none; 
     opacity: 0; 
-    transition: 0.2s ease-out; 
+    transition: 0.15s ease-out; 
     border: 1px solid rgba(255,255,255,0.1); 
     box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     z-index: 1000;
-    pointer-events: none;
 }
 
-/* One single hover rule for all tooltips */
 .tip-box:hover .tip-text { 
     opacity: 1; 
     transform: translateX(-50%) translateY(0); 
 }
 
-/* --- MOBILE CHAT CUT-OFF FIX --- */
-@media (max-width: 1000px) {
-    .chat-section { 
-        width: 100%; 
-        height: 60dvh;
-        border-top: 2px solid var(--accent); 
-    }
-    .player-section {
-        padding: 0 10px !important;
-    }
+/* Responsive Tooltip Hide */
+@media (max-width: 800px) {
+    .tip-text { display: none !important; }
 }
 
 /* --- INFO & DESCRIPTION SECTION --- */
@@ -327,16 +348,20 @@ input[type=range] { width: 80px; accent-color: var(--accent); cursor: pointer; o
 }
 
         function setOffline(isOff) {
-            offline.style.display = isOff ? 'flex' : 'none';
-            if (isOff) {
-                isStarted = false;
-                document.body.classList.add('hide-ui');
-                loading.style.display = 'none';
-                startOverlay.style.display = 'none';
-                video.pause();
-                video.muted = true;
-            }
-        }
+    offline.style.display = isOff ? 'flex' : 'none';
+    if (isOff) {
+        isStarted = false;
+        document.body.classList.add('hide-ui');
+        loading.style.display = 'none';
+        startOverlay.style.display = 'none';
+        
+        // Ensure mouse is visible when offline
+        main.classList.remove('cursor-hidden'); 
+        
+        video.pause();
+        video.muted = true;
+    }
+}
 
         function syncLive() {
             if (hls && hls.liveSyncPosition) video.currentTime = hls.liveSyncPosition - 5;
@@ -358,12 +383,12 @@ input[type=range] { width: 80px; accent-color: var(--accent); cursor: pointer; o
         return;
     }
 
-    // Check if the controls are already visible
+    // On Mobile: If UI is hidden, show it but DON'T pause.
+    // This allows the first tap to "wake up" the controls.
     if (!controls.classList.contains('ui-visible')) {
-        // If hidden, just show them and don't pause
         showUI();
     } else {
-        // If already visible, then toggle the play/pause state
+        // Only if controls are already visible does a tap pause the video.
         togglePlay();
     }
 }
@@ -374,7 +399,13 @@ input[type=range] { width: 80px; accent-color: var(--accent); cursor: pointer; o
             
             loading.style.display = 'flex';
             
-            hls = new Hls({ liveSyncDurationCount: 3, enableWorker: true });
+            hls = new Hls({ 
+    liveSyncDurationCount: 3, 
+    enableWorker: true,
+    nudgeMaxRetries: 10,
+    nudgeOffset: 0.1,
+    lowLatencyMode: false
+});
             hls.loadSource('http://147.185.221.212:26420/jakpat/index.m3u8');
             hls.attachMedia(video);
             
@@ -385,11 +416,22 @@ input[type=range] { width: 80px; accent-color: var(--accent); cursor: pointer; o
             });
 
             hls.on(Hls.Events.ERROR, (e, data) => {
-                if (data.fatal) { 
-                    setOffline(true); 
-                    setTimeout(initHls, 3000); 
-                }
-            });
+    if (data.fatal) { 
+        switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+                hls.startLoad(); // Try to get the stream back
+                break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+                console.log("Video lag detected, recovering...");
+                hls.recoverMediaError(); // This fixes the frozen video/playing audio bug
+                break;
+            default:
+                setOffline(true); 
+                setTimeout(initHls, 3000); 
+                break;
+        }
+    }
+});
         }
 
         function togglePlay() { 
@@ -470,7 +512,16 @@ input[type=range] { width: 80px; accent-color: var(--accent); cursor: pointer; o
             }
         }, 2000);
 
+        // Double-click to fullscreen
+video.addEventListener('dblclick', (e) => {
+    if (isStarted) {
+        toggleFS();
+    }
+});
         initHls();
+        window.onbeforeunload = () => {
+    if (hls) hls.destroy();
+};
     </script>
 </body>
 </html>
