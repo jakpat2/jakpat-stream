@@ -394,18 +394,22 @@ input[type=range] { width: 80px; accent-color: var(--accent); cursor: pointer; o
 }
 
         function initHls() {
-            if (!Hls.isSupported()) return;
-            if (hls) hls.destroy();
-            
-            loading.style.display = 'flex';
-            
-            hls = new Hls({ 
-    liveSyncDurationCount: 3, 
-    enableWorker: true,
-    nudgeMaxRetries: 10,
-    nudgeOffset: 0.1,
-    lowLatencyMode: false
-});
+    if (!Hls.isSupported()) return;
+    if (hls) hls.destroy();
+    
+    loading.style.display = 'flex';
+    
+    hls = new Hls({
+        liveSyncDurationCount: 3,
+        maxLiveSyncPlaybackRate: 1,
+        liveSyncPosition: 6,
+        enableWorker: true,
+        lowLatencyMode: true,
+        backBufferLength: 30,
+        nudgeMaxRetries: 8,
+        nudgeOffset: 0.1,
+        manifestLoadingMaxRetry: 10
+    });
             hls.loadSource('http://147.185.221.212:26420/jakpat/index.m3u8');
             hls.attachMedia(video);
             
@@ -530,28 +534,30 @@ hls.on(Hls.Events.ERROR, (e, data) => {
 
         setInterval(() => {
     if (hls && isStarted && !video.paused) {
-        // 1. Check for Drift (Your existing logic)
         if (hls.liveSyncPosition) {
             const drift = hls.liveSyncPosition - video.currentTime;
-            liveBadge.classList.toggle('is-live', drift < 15);
-            if (drift > 45) syncLive();
+            
+            // Turn badge RED if within 12 seconds of live (Safe window)
+            // Turn badge GREY if further than 12 seconds (They are lagging/paused)
+            liveBadge.classList.toggle('is-live', drift < 12);
+            
+            // If they are more than 40 seconds behind, force them back to the safe spot.
+            if (drift > 40) syncLive();
         }
 
-        // 2. Check if video is actually moving (The Freeze Fix)
+        // Freeze detection (Time isn't moving)
         if (video.currentTime === lastTime) {
             stuckCounter++;
-            console.log("Stream looks frozen... " + stuckCounter);
         } else {
-            stuckCounter = 0; // Reset if time moved
+            stuckCounter = 0;
         }
         lastTime = video.currentTime;
 
-        // If stuck for 6 seconds (3 checks), trigger offline
-        if (stuckCounter >= 3) {
-            console.log("Confirmed freeze. Going offline.");
+        if (stuckCounter >= 4) { // 8 seconds of absolute frozen time
+            console.log("Stream frozen. Reconnecting...");
             stuckCounter = 0;
             setOffline(true);
-            setTimeout(initHls, 5000);
+            setTimeout(initHls, 3000);
         }
     }
 }, 2000);
