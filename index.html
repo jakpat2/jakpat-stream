@@ -131,6 +131,9 @@ body.theatre-mode .player-area {
 @keyframes spin { 100% { transform: rotate(360deg); } }
 @keyframes breathe { 0% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); opacity: 0.6; } }
 
+#offline-overlay { z-index: 500 !important; } /* Higher than loading */
+#loading-overlay { z-index: 400; }
+
 #controls-bar { 
     position: absolute; 
     bottom: 0; 
@@ -319,6 +322,7 @@ input[type=range] { width: 80px; accent-color: var(--accent); cursor: pointer; o
         const liveBadge = document.getElementById('live-badge');
         const volumeArea = document.getElementById('volume-area');
         let hls, hideTimer, isStarted = false;
+        let lastTime = -1, stuckCounter = 0;
 
         video.volume = localStorage.getItem('playerVolume') || 1.0;
         volSlider.value = video.volume;
@@ -351,15 +355,11 @@ input[type=range] { width: 80px; accent-color: var(--accent); cursor: pointer; o
     offline.style.display = isOff ? 'flex' : 'none';
     if (isOff) {
         isStarted = false;
-        document.body.classList.add('hide-ui');
-        loading.style.display = 'none';
+        loading.style.display = 'none'; // <-- Add this to hide the spinner
         startOverlay.style.display = 'none';
-        
-        // Ensure mouse is visible when offline
+        document.body.classList.add('hide-ui');
         main.classList.remove('cursor-hidden'); 
-        
         video.pause();
-        video.muted = true;
     }
 }
 
@@ -415,15 +415,32 @@ input[type=range] { width: 80px; accent-color: var(--accent); cursor: pointer; o
                 video.play().catch(() => {}); 
             });
 
-            hls.on(Hls.Events.ERROR, (e, data) => {
+            // 1. Monitor if the video simply stops receiving data
+video.addEventListener('stalled', () => {
+    if (isStarted && !video.paused) {
+        console.log("Stream stalled. Checking status...");
+        setTimeout(() => {
+            // If after 5 seconds the video still hasn't recovered data
+            if (video.readyState < 3 && isStarted) {
+                console.log("Recovery failed. Going offline.");
+                setOffline(true);
+                setTimeout(initHls, 5000);
+            }
+        }, 5000);
+    }
+}, { once: false }); // once: false ensures it keeps working throughout the session
+
+// 2. Updated Error Handler
+hls.on(Hls.Events.ERROR, (e, data) => {
     if (data.fatal) { 
         switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-                // If the manifest (index.m3u8) is missing, show offline
-                if (data.details === 'manifestLoadError') {
-                    console.log("Stream file not found. Going offline.");
+                // Check if the stream file is gone (Offline)
+                // Added fragLoadError: triggered when individual video chunks disappear
+                if (data.details === 'manifestLoadError' || data.details === 'fragLoadError') {
+                    console.log("Stream data lost. Going offline.");
                     setOffline(true);
-                    setTimeout(initHls, 5000); // Try to reboot the player in 5 seconds
+                    setTimeout(initHls, 5000);
                 } else {
                     hls.startLoad();
                 }
@@ -434,7 +451,7 @@ input[type=range] { width: 80px; accent-color: var(--accent); cursor: pointer; o
                 break;
             default:
                 setOffline(true); 
-                setTimeout(initHls, 3000); 
+                setTimeout(initHls, 5000); 
                 break;
         }
     }
@@ -512,12 +529,32 @@ input[type=range] { width: 80px; accent-color: var(--accent); cursor: pointer; o
         });
 
         setInterval(() => {
-            if (hls && hls.liveSyncPosition && isStarted) {
-                const drift = hls.liveSyncPosition - video.currentTime;
-                liveBadge.classList.toggle('is-live', drift < 15);
-                if (drift > 45 && !video.paused) syncLive();
-            }
-        }, 2000);
+    if (hls && isStarted && !video.paused) {
+        // 1. Check for Drift (Your existing logic)
+        if (hls.liveSyncPosition) {
+            const drift = hls.liveSyncPosition - video.currentTime;
+            liveBadge.classList.toggle('is-live', drift < 15);
+            if (drift > 45) syncLive();
+        }
+
+        // 2. Check if video is actually moving (The Freeze Fix)
+        if (video.currentTime === lastTime) {
+            stuckCounter++;
+            console.log("Stream looks frozen... " + stuckCounter);
+        } else {
+            stuckCounter = 0; // Reset if time moved
+        }
+        lastTime = video.currentTime;
+
+        // If stuck for 6 seconds (3 checks), trigger offline
+        if (stuckCounter >= 3) {
+            console.log("Confirmed freeze. Going offline.");
+            stuckCounter = 0;
+            setOffline(true);
+            setTimeout(initHls, 5000);
+        }
+    }
+}, 2000);
 
         // Double-click to fullscreen
 video.addEventListener('dblclick', (e) => {
@@ -532,4 +569,3 @@ video.addEventListener('dblclick', (e) => {
     </script>
 </body>
 </html>
-
