@@ -419,11 +419,18 @@ input[type=range] { width: 80px; accent-color: var(--accent); cursor: pointer; o
     if (data.fatal) { 
         switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-                hls.startLoad(); // Try to get the stream back
+                // If the manifest (index.m3u8) is missing, show offline
+                if (data.details === 'manifestLoadError') {
+                    console.log("Stream file not found. Going offline.");
+                    setOffline(true);
+                    setTimeout(initHls, 5000); // Try to reboot the player in 5 seconds
+                } else {
+                    hls.startLoad();
+                }
                 break;
             case Hls.ErrorTypes.MEDIA_ERROR:
                 console.log("Video lag detected, recovering...");
-                hls.recoverMediaError(); // This fixes the frozen video/playing audio bug
+                hls.recoverMediaError();
                 break;
             default:
                 setOffline(true); 
@@ -525,3 +532,4 @@ video.addEventListener('dblclick', (e) => {
     </script>
 </body>
 </html>
+
