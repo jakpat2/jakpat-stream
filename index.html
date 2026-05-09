@@ -411,7 +411,7 @@ input[type=range] { width: 80px; accent-color: var(--accent); cursor: pointer; o
         nudgeOffset: 0.1,
         manifestLoadingMaxRetry: 10
     });
-            hls.loadSource('https://stream-stream.jakpat.dev/jakpat/index.m3u8');
+            hls.loadSource('https://stream-stream.jakpat.dev:46373/jakpat/index.m3u8');
             hls.attachMedia(video);
             
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
